@@ -8,14 +8,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AskYourReports.Tests;
 
-/// <summary>Runs the real app in memory with the default (fake) LLM client and a temporary database.</summary>
+/// <summary>Runs the real app in memory with a temporary database. Uses the default (fake) LLM client unless settings say otherwise.</summary>
 public sealed class AppFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"ayr-e2e-{Guid.NewGuid():N}.db");
 
+    public Dictionary<string, string> Settings { get; init; } = [];
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Sales", $"Data Source={_dbPath};Pooling=False");
+        foreach (var (key, value) in Settings)
+            builder.UseSetting(key, value);
         builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(new FixedTimeProvider()));
     }
 

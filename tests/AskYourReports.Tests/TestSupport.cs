@@ -2,18 +2,33 @@ using AskYourReports.Data;
 
 namespace AskYourReports.Tests;
 
-/// <summary>A clock frozen at a fixed date, so period-based reports are deterministic.</summary>
-public sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+/// <summary>A clock frozen at a fixed date (movable by tests), so period-based reports are deterministic.</summary>
+public sealed class FixedTimeProvider : TimeProvider
 {
     public static readonly DateOnly Today = new(2026, 6, 15);
 
-    public FixedTimeProvider() : this(new DateTimeOffset(Today.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero))
-    {
-    }
+    public DateTimeOffset Now { get; set; } = new(Today.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero);
 
-    public override DateTimeOffset GetUtcNow() => now;
+    public override DateTimeOffset GetUtcNow() => Now;
 
     public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+}
+
+/// <summary>Collects log messages so tests can check what was logged.</summary>
+public sealed class ListLogger<T> : Microsoft.Extensions.Logging.ILogger<T>
+{
+    public List<string> Messages { get; } = [];
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+    public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+
+    public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId,
+        TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        lock (Messages)
+            Messages.Add(formatter(state, exception));
+    }
 }
 
 /// <summary>A seeded SQLite file in the temp folder, shared by the tests in a class and deleted afterwards.</summary>

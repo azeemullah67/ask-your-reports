@@ -27,5 +27,8 @@ public abstract class LlmException(string message, Exception? inner = null) : Ex
 /// <summary>The per-day request limit has been used up.</summary>
 public sealed class LlmLimitReachedException(string message) : LlmException(message);
 
+/// <summary>A failure worth retrying: rate limiting, provider overload or a network error.</summary>
+public sealed class LlmTransientException(string message, Exception? inner = null) : LlmException(message, inner);
+
 /// <summary>The model could not be reached or kept failing (timeouts, errors after retries, bad config).</summary>
 public sealed class LlmUnavailableException(string message, Exception? inner = null) : LlmException(message, inner);

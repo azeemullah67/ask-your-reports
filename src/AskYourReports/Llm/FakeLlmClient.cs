@@ -14,19 +14,41 @@ public sealed partial class FakeLlmClient : ILlmClient
 {
     public string Name => "fake";
 
+    private int _calls;
+
     /// <summary>When set, returned verbatim instead of the keyword-based choice (lets tests send bad JSON etc.).</summary>
     public string? ChoiceOverride { get; init; }
 
-    public Task<LlmReply> ChooseReportAsync(string question, CancellationToken cancellationToken)
+    /// <summary>Simulated latency per call (lets tests trigger timeouts).</summary>
+    public TimeSpan Delay { get; init; }
+
+    /// <summary>The first N calls throw <see cref="LlmTransientException"/> (lets tests exercise retries).</summary>
+    public int TransientFailures { get; init; }
+
+    /// <summary>Number of calls received, including failed ones.</summary>
+    public int Calls => Volatile.Read(ref _calls);
+
+    public async Task<LlmReply> ChooseReportAsync(string question, CancellationToken cancellationToken)
     {
+        await SimulateAsync(cancellationToken);
         var text = ChoiceOverride ?? ChooseByKeywords(question);
-        return Task.FromResult(new LlmReply(text, EstimateTokens(question), EstimateTokens(text)));
+        return new LlmReply(text, EstimateTokens(question), EstimateTokens(text));
     }
 
-    public Task<LlmReply> SummarizeAsync(string question, ReportResult result, CancellationToken cancellationToken)
+    public async Task<LlmReply> SummarizeAsync(string question, ReportResult result, CancellationToken cancellationToken)
     {
+        await SimulateAsync(cancellationToken);
         var text = Summarize(result);
-        return Task.FromResult(new LlmReply(text, EstimateTokens(question), EstimateTokens(text)));
+        return new LlmReply(text, EstimateTokens(question), EstimateTokens(text));
+    }
+
+    private async Task SimulateAsync(CancellationToken cancellationToken)
+    {
+        var call = Interlocked.Increment(ref _calls);
+        if (Delay > TimeSpan.Zero)
+            await Task.Delay(Delay, cancellationToken);
+        if (call <= TransientFailures)
+            throw new LlmTransientException($"Simulated transient failure {call} of {TransientFailures}.");
     }
 
     private static string ChooseByKeywords(string question)

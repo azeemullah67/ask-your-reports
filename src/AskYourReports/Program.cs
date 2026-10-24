@@ -9,7 +9,9 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(sp => new SalesDatabase(
     sp.GetRequiredService<IConfiguration>().GetConnectionString("Sales") ?? "Data Source=reports.db"));
 builder.Services.AddSingleton<ReportRunner>();
-builder.Services.AddSingleton<ILlmClient, FakeLlmClient>();
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IConfiguration>().GetSection(LlmOptions.Section).Get<LlmOptions>() ?? new LlmOptions());
+builder.Services.AddSingleton(LlmClientFactory.Create);
 builder.Services.AddScoped<AskService>();
 
 var app = builder.Build();
