@@ -22,6 +22,17 @@ public sealed class SalesDatabase
     }
 
     /// <summary>
+    /// Opens a connection that SQLite itself refuses to write through. Reports use this as a second line of defence.
+    /// </summary>
+    public SqliteConnection OpenReadOnly()
+    {
+        var builder = new SqliteConnectionStringBuilder(_connectionString) { Mode = SqliteOpenMode.ReadOnly };
+        var connection = new SqliteConnection(builder.ToString());
+        connection.Open();
+        return connection;
+    }
+
+    /// <summary>
     /// Creates the schema and inserts fake data if the database is empty.
     /// Uses a fixed random seed so every run produces the same data,
     /// with dates relative to <paramref name="today"/> so "last month" always has rows.
