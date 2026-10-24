@@ -19,6 +19,9 @@ public sealed partial class FakeLlmClient : ILlmClient
     /// <summary>When set, returned verbatim instead of the keyword-based choice (lets tests send bad JSON etc.).</summary>
     public string? ChoiceOverride { get; init; }
 
+    /// <summary>When set, returned verbatim instead of the template summary (lets tests simulate a bad model summary).</summary>
+    public string? SummaryOverride { get; init; }
+
     /// <summary>Simulated latency per call (lets tests trigger timeouts).</summary>
     public TimeSpan Delay { get; init; }
 
@@ -38,7 +41,7 @@ public sealed partial class FakeLlmClient : ILlmClient
     public async Task<LlmReply> SummarizeAsync(string question, ReportResult result, CancellationToken cancellationToken)
     {
         await SimulateAsync(cancellationToken);
-        var text = Summarize(result);
+        var text = SummaryOverride ?? ReportSummaries.Template(result);
         return new LlmReply(text, EstimateTokens(question), EstimateTokens(text));
     }
 
@@ -88,29 +91,6 @@ public sealed partial class FakeLlmClient : ILlmClient
         Has(q, "week|7 days") ? "last_7_days" :
         Has(q, "quarter|90 days|3 months|three months") ? "last_90_days" :
         "last_30_days";
-
-    private static string Summarize(ReportResult result)
-    {
-        if (result.Rows.Count == 0)
-            return $"There were no sales for {result.Range}.";
-
-        var heading = result.Report switch
-        {
-            "worst_products" => "Lowest-revenue products",
-            "top_products" => "Highest-revenue products",
-            "revenue_by_category" => "Revenue by category",
-            "sales_by_region" => "Revenue by region",
-            "monthly_revenue_trend" => "Revenue by month",
-            _ => "Results",
-        };
-
-        var revenueIndex = result.Columns.ToList().IndexOf("revenue");
-        var items = result.DisplayRows.Take(5).Select(row =>
-            revenueIndex < 0 ? row[0] : $"{row[0]} ({row[revenueIndex]})");
-
-        var more = result.Rows.Count > 5 ? $", and {result.Rows.Count - 5} more" : "";
-        return $"{heading} for {result.Range}: {string.Join(", ", items)}{more}.";
-    }
 
     private static bool Has(string text, string alternatives) =>
         Regex.IsMatch(text, $@"\b({alternatives})\b");

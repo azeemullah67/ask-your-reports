@@ -21,7 +21,9 @@ public sealed record AskResponse(
     string? Detail = null,
     string? Report = null,
     IReadOnlyDictionary<string, object>? Parameters = null,
-    ReportResult? Result = null);
+    ReportResult? Result = null,
+    // true: the AI summary passed the check; false: it failed and Answer is a plain C# summary; null: no AI summary.
+    bool? SummaryChecked = null);
 
 /// <summary>
 /// The whole pipeline: question -> model picks a report -> C# validates -> SQL runs -> model summarizes.
@@ -71,9 +73,23 @@ public sealed class AskService
 
         string answer;
         string? detail = null;
+        bool? summaryChecked = null;
         try
         {
-            answer = (await _llm.SummarizeAsync(question, result, cancellationToken)).Text.Trim();
+            var summary = (await _llm.SummarizeAsync(question, result, cancellationToken)).Text.Trim();
+            if (ReportSummaries.TryCheck(summary, result, out var problem))
+            {
+                answer = summary;
+                summaryChecked = true;
+            }
+            else
+            {
+                // Never show text that disagrees with the rows. No retry: a second model call costs money.
+                _logger.LogWarning("AI summary failed the check: {Problem}. Model output: {Output}", problem, Truncate(summary));
+                answer = ReportSummaries.Template(result);
+                detail = $"AI summary failed a check: {problem}.";
+                summaryChecked = false;
+            }
         }
         catch (LlmException ex)
         {
@@ -82,7 +98,7 @@ public sealed class AskService
             detail = ex.Message;
         }
 
-        return Respond(AskOutcome.Answered, answer, detail, selection!.Report.Name, selection.Values, result);
+        return Respond(AskOutcome.Answered, answer, detail, selection!.Report.Name, selection.Values, result, summaryChecked);
     }
 
     private AskResponse FromLlmFailure(LlmException ex) => ex switch
@@ -97,8 +113,9 @@ public sealed class AskService
         string? detail = null,
         string? report = null,
         IReadOnlyDictionary<string, object>? parameters = null,
-        ReportResult? result = null) =>
-        new(outcome, answer, _llm.Name, detail, report, parameters, result);
+        ReportResult? result = null,
+        bool? summaryChecked = null) =>
+        new(outcome, answer, _llm.Name, detail, report, parameters, result, summaryChecked);
 
     private static string Truncate(string text) => text.Length <= 200 ? text : text[..200] + "...";
 }

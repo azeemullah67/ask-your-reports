@@ -47,6 +47,7 @@ public class AskEndpointTests(AppFactory factory) : IClassFixture<AppFactory>
         Assert.Equal(5, body.GetProperty("result").GetProperty("rows").GetArrayLength());
         var firstRow = body.GetProperty("result").GetProperty("displayRows")[0];
         Assert.Matches(@"^\$\d{1,3}(,\d{3})*\.\d{2}$", firstRow[3].GetString()); // revenue column, formatted in C#
+        Assert.True(body.GetProperty("summaryChecked").GetBoolean());
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("answer").GetString()));
     }
 
@@ -76,6 +77,7 @@ public class AskEndpointTests(AppFactory factory) : IClassFixture<AppFactory>
 
         Assert.Contains("<form id=\"ask-form\">", html);
         Assert.Contains("Which products earned the least revenue last month?", html);
+        Assert.Contains("AI summary failed a check, showing a plain summary", html);
     }
 
     private static async Task<JsonElement> ReadJson(HttpResponseMessage response) =>

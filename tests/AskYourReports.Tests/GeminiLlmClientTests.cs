@@ -91,6 +91,27 @@ public class GeminiLlmClientTests
     }
 
     [Fact]
+    public async Task A_simulated_gemini_summary_like_the_live_one_falls_back_to_the_plain_summary()
+    {
+        using var database = new SeededDatabaseFixture();
+        var summary = JsonSerializer.Serialize(ReportSummariesTests.LiveGeminiSummary);
+        var (client, handler) = Create(responses:
+        [
+            Ok(ChoiceResponse),
+            Ok($$"""{"candidates":[{"content":{"parts":[{"text":{{summary}}}]},"finishReason":"STOP"}]}"""),
+        ]);
+        var service = new AskService(client, new ReportRunner(database.Database, new FixedTimeProvider()),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<AskService>.Instance);
+
+        var response = await service.AskAsync(Question, CancellationToken.None);
+
+        Assert.Equal("worst_products", response.Report);
+        Assert.False(response.SummaryChecked);
+        Assert.Equal(ReportSummaries.Template(response.Result!), response.Answer);
+        Assert.Equal(2, handler.Requests.Count); // no retry of the summary call
+    }
+
+    [Fact]
     public async Task Configured_model_overrides_the_default()
     {
         var (client, handler) = Create(new LlmOptions { Model = GeminiLlmClient.FallbackModel }, Ok(ChoiceResponse));

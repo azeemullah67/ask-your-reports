@@ -21,6 +21,7 @@
     .card.error { background: var(--warn-bg); border-color: #f0c88a; color: var(--warn); }
     .answer { margin: 0; font-size: 1.05rem; }
     .meta { margin: 8px 0 0; color: var(--muted); font-size: .85rem; }
+    .notice { margin: 8px 0 0; padding: 6px 10px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); font-size: .85rem; }
     code { font-size: .85rem; }
     /* Only the table scrolls sideways, never the page. Edge shadows show which side has more columns. */
     .table-wrap {
@@ -103,6 +104,8 @@
     const card = el("div", { className: ok ? "card" : "card error" });
     card.append(el("p", { className: "answer" }, data.answer));
 
+    if (data.summaryChecked === false)
+      card.append(el("p", { className: "notice" }, "AI summary failed a check, showing a plain summary"));
     if (data.detail) card.append(el("p", { className: "meta" }, "Detail: " + data.detail));
 
     if (ok) {

@@ -23,6 +23,41 @@ public class AskServiceTests(SeededDatabaseFixture fixture) : IClassFixture<Seed
         Assert.Equal("fake", response.Provider);
     }
 
+    [Fact]
+    public async Task A_summary_that_passes_the_check_is_shown_as_the_answer()
+    {
+        var response = await CreateService(new FakeLlmClient())
+            .AskAsync("Which products earned the least revenue last month?", CancellationToken.None);
+
+        Assert.True(response.SummaryChecked);
+        Assert.Null(response.Detail);
+    }
+
+    [Fact]
+    public async Task A_summary_that_fails_the_check_is_replaced_by_the_plain_summary_without_another_model_call()
+    {
+        var fake = new FakeLlmClient { SummaryOverride = ReportSummariesTests.LiveGeminiSummary };
+
+        var response = await CreateService(fake).AskAsync("Which products earned the least revenue last month?", CancellationToken.None);
+
+        Assert.Equal(AskOutcome.Answered, response.Outcome);
+        Assert.False(response.SummaryChecked);
+        Assert.Equal(ReportSummaries.Template(response.Result!), response.Answer);
+        Assert.DoesNotContain("280 in revenue", response.Answer);
+        Assert.StartsWith("AI summary failed a check: it does not mention", response.Detail);
+        Assert.Equal(2, fake.Calls); // choose + one summary; no retry
+    }
+
+    [Fact]
+    public async Task An_empty_summary_fails_the_check()
+    {
+        var response = await CreateService(new FakeLlmClient { SummaryOverride = "" })
+            .AskAsync("Which products earned the least revenue last month?", CancellationToken.None);
+
+        Assert.False(response.SummaryChecked);
+        Assert.Equal(ReportSummaries.Template(response.Result!), response.Answer);
+    }
+
     [Theory]
     [InlineData("Sure! Here is the report you asked for.")]
     [InlineData("{\"report\": \"top_products\", ")]
