@@ -45,6 +45,8 @@ public class AskEndpointTests(AppFactory factory) : IClassFixture<AppFactory>
         Assert.Equal("worst_products", body.GetProperty("report").GetString());
         Assert.Equal("fake", body.GetProperty("provider").GetString());
         Assert.Equal(5, body.GetProperty("result").GetProperty("rows").GetArrayLength());
+        var firstRow = body.GetProperty("result").GetProperty("displayRows")[0];
+        Assert.Matches(@"^\$\d{1,3}(,\d{3})*\.\d{2}$", firstRow[3].GetString()); // revenue column, formatted in C#
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("answer").GetString()));
     }
 

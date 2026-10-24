@@ -116,17 +116,8 @@
     updateScrollHints();
   }
 
-  // The sample data is priced in US dollars; revenue always shows two decimals.
-  const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const count = new Intl.NumberFormat("en-US");
-
-  function formatCell(column, value) {
-    if (value === null || value === undefined) return "";
-    if (column === "revenue") return money.format(value);
-    if (typeof value === "number") return count.format(value);
-    return String(value);
-  }
-
+  // Values are formatted once, in C# (ReportFormatting), so the page, the fake client and the AI summary agree.
+  // Raw rows are only used to decide which columns are numeric (right-aligned).
   function table(result) {
     const numeric = result.columns.map((_, i) => result.rows.length > 0 && typeof result.rows[0][i] === "number");
     const t = el("table");
@@ -134,9 +125,9 @@
     result.columns.forEach((c, i) => head.append(el("th", { scope: "col", className: numeric[i] ? "num" : "" }, c)));
     t.append(el("thead", {}, head));
     const body = el("tbody");
-    result.rows.forEach(row => {
+    result.displayRows.forEach(row => {
       const tr = el("tr");
-      row.forEach((v, i) => tr.append(el("td", { className: numeric[i] ? "num" : "" }, formatCell(result.columns[i], v))));
+      row.forEach((v, i) => tr.append(el("td", { className: numeric[i] ? "num" : "" }, v)));
       body.append(tr);
     });
     t.append(body);

@@ -65,18 +65,29 @@ public class GeminiLlmClientTests
     }
 
     [Fact]
-    public async Task Summarize_asks_for_plain_text_without_a_schema()
+    public async Task Summarize_asks_for_plain_text_from_display_formatted_rows()
     {
         var (client, handler) = Create(responses: Ok(SummaryResponse));
-        var result = new ReportResult("worst_products", "last month", ["product", "revenue"], [["Chai Spice Blend", 280.0]]);
+        var result = new ReportResult("worst_products", "last month", ["product", "units", "revenue"], [["Chai Spice Blend", 1035L, 280.0]]);
 
         var reply = await client.SummarizeAsync(Question, result, CancellationToken.None);
 
         Assert.Equal("Chai Spice Blend earned the least, at $280.00.", reply.Text);
         Assert.Equal(12, reply.OutputTokens); // no thinking tokens reported
-        var generation = JsonDocument.Parse(Assert.Single(handler.Requests).Body).RootElement.GetProperty("generationConfig");
+
+        var body = JsonDocument.Parse(Assert.Single(handler.Requests).Body).RootElement;
+        var generation = body.GetProperty("generationConfig");
         Assert.False(generation.TryGetProperty("responseMimeType", out _));
         Assert.False(generation.TryGetProperty("responseJsonSchema", out _));
+
+        // The model sees the same strings as the page, not raw numbers.
+        var userText = body.GetProperty("contents")[0].GetProperty("parts")[0].GetProperty("text").GetString()!;
+        Assert.Contains("""["Chai Spice Blend","1,035","$280.00"]""", userText);
+        Assert.Contains("Row count: 1", userText);
+        Assert.DoesNotContain("280]", userText);
+        var systemText = body.GetProperty("systemInstruction").GetProperty("parts")[0].GetProperty("text").GetString()!;
+        Assert.Contains("If there are 5 rows or fewer, name every row", systemText);
+        Assert.Contains("\"$1,237.50\"", systemText);
     }
 
     [Fact]

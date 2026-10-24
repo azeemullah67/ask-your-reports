@@ -6,7 +6,11 @@ public sealed record ReportResult(
     string Report,
     string Range,
     IReadOnlyList<string> Columns,
-    IReadOnlyList<object?[]> Rows);
+    IReadOnlyList<object?[]> Rows)
+{
+    /// <summary>The rows as people see them (see <see cref="ReportFormatting"/>); sent to the page and the model.</summary>
+    public IReadOnlyList<string[]> DisplayRows => ReportFormatting.FormatRows(Columns, Rows);
+}
 
 /// <summary>
 /// Runs a validated report: the developer-written SQL with parameters bound, on a read-only connection.

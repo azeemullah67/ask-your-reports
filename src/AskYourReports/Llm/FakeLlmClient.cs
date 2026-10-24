@@ -105,10 +105,8 @@ public sealed partial class FakeLlmClient : ILlmClient
         };
 
         var revenueIndex = result.Columns.ToList().IndexOf("revenue");
-        var items = result.Rows.Take(5).Select(row =>
-            revenueIndex < 0
-                ? $"{row[0]}"
-                : $"{row[0]} (${Convert.ToDouble(row[revenueIndex]).ToString("N2", CultureInfo.InvariantCulture)})");
+        var items = result.DisplayRows.Take(5).Select(row =>
+            revenueIndex < 0 ? row[0] : $"{row[0]} ({row[revenueIndex]})");
 
         var more = result.Rows.Count > 5 ? $", and {result.Rows.Count - 5} more" : "";
         return $"{heading} for {result.Range}: {string.Join(", ", items)}{more}.";

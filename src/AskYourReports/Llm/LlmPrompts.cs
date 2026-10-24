@@ -15,8 +15,13 @@ public static class LlmPrompts
     public const string SummarizeSystem =
         """
         You answer a business question in 1 to 3 plain-English sentences, using only the report rows provided.
-        Quote numbers exactly as given and do not invent or estimate data. If there are no rows, say there was no data
-        for that period. Plain text only, no markdown, no tables.
+        If there are 5 rows or fewer, name every row. If there are more, say "top N" (N is the number of rows) and
+        name the first five.
+        Copy names and values exactly as written in the rows, including the dollar sign, commas and two decimals
+        (for example "$1,237.50", never "1237.5" or "$1.2k"). Do not write any other number: no totals, differences,
+        percentages or dates, except the period exactly as given.
+        If there are no rows, say there was no data for that period.
+        Plain text only, no markdown, no lists, no tables.
         """;
 
     /// <summary>
@@ -33,7 +38,8 @@ public static class LlmPrompts
         Question: <question>{question}</question>
         Report: {result.Report}
         Period: {result.Range}
-        Rows (JSON): {JsonSerializer.Serialize(new { columns = result.Columns, rows = result.Rows })}
+        Row count: {result.Rows.Count}
+        Rows (JSON, values already formatted for display): {JsonSerializer.Serialize(new { columns = result.Columns, rows = result.DisplayRows })}
         """;
 
     /// <summary>Deliberately pessimistic estimate (about 3 characters per token) used for the input cap.</summary>
