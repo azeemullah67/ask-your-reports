@@ -16,10 +16,12 @@ public sealed class AnthropicLlmClient : ILlmClient
     private readonly AnthropicClient _client;
     private readonly LlmOptions _options;
 
+    public const string DefaultModel = "claude-opus-5-5";
+
     /// <param name="httpClient">Optional; tests pass one with a fake handler so nothing leaves the machine.</param>
     public AnthropicLlmClient(string apiKey, LlmOptions options, HttpClient? httpClient = null)
     {
-        _options = options;
+        _options = options.WithDefaultModel(DefaultModel);
         // MaxRetries = 0: the guard does the retrying. Timeout: the guard's per-attempt timeout is the real one.
         var timeout = options.Timeout + TimeSpan.FromSeconds(5);
         _client = httpClient is null

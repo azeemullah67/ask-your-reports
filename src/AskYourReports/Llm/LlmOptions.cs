@@ -8,10 +8,11 @@ public sealed class LlmOptions
 {
     public const string Section = "Llm";
 
-    /// <summary>"Fake" (default, free, offline) or "Anthropic" (real, paid).</summary>
+    /// <summary>"Fake" (default, free, offline), "Anthropic" or "Gemini" (real, paid).</summary>
     public string Provider { get; set; } = "Fake";
 
-    public string Model { get; set; } = "claude-opus-5-5";
+    /// <summary>Model ID. Empty means the provider's own default.</summary>
+    public string Model { get; set; } = "";
 
     /// <summary>Requests whose estimated prompt size exceeds this are refused before sending.</summary>
     public int MaxInputTokens { get; set; } = 4_000;
@@ -30,4 +31,13 @@ public sealed class LlmOptions
 
     /// <summary>First retry waits this long; each later retry doubles it.</summary>
     public TimeSpan RetryBaseDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>A copy with <see cref="Model"/> set to <paramref name="defaultModel"/> if none was configured.</summary>
+    public LlmOptions WithDefaultModel(string defaultModel)
+    {
+        var copy = (LlmOptions)MemberwiseClone();
+        if (string.IsNullOrWhiteSpace(copy.Model))
+            copy.Model = defaultModel;
+        return copy;
+    }
 }

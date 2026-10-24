@@ -48,6 +48,18 @@ public class AnthropicLlmClientTests
         Assert.Contains("none", reportNames);
     }
 
+    [Fact]
+    public async Task Configured_model_overrides_the_default()
+    {
+        var handler = new CapturingHandler(HttpStatusCode.OK, OkResponse);
+        var client = new AnthropicLlmClient("test-key-not-real", new LlmOptions { Model = "claude-haiku-5-5" }, new HttpClient(handler));
+
+        await client.ChooseReportAsync("top products", CancellationToken.None);
+
+        var body = JsonDocument.Parse(Assert.Single(handler.Requests).Body).RootElement;
+        Assert.Equal("claude-haiku-5-5", body.GetProperty("model").GetString());
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.TooManyRequests, typeof(LlmTransientException))]
     [InlineData(HttpStatusCode.InternalServerError, typeof(LlmTransientException))]
