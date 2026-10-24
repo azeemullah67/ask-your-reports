@@ -1,6 +1,6 @@
 # Ask Your Reports
 
-A small .NET 8 demo: type a business question ("Which products sold worst last month?") and get a short
+A small .NET 8 demo: type a business question ("Which products earned the least revenue last month?") and get a short
 plain-English answer from a SQL database, with the AI restricted to choosing from five pre-approved reports.
 
 The AI never writes SQL. It picks a report name and fills in parameters as JSON; C# validates that JSON
@@ -191,8 +191,12 @@ Timeouts and transient errors (429, 5xx, network) are retried with exponential b
   simulated HTTP server only, so a first real run could still reveal problems (for example how the API
   treats the JSON schema, or how well the model picks reports and summarizes).
 - Answer quality from a real model, beyond the C# checks on its report choice.
-- The HTML page in a browser. Tests only check that it is served; `/ask` was also called manually with
-  the fake client, but the page's JavaScript has not been exercised by any test.
+- The page on a real phone. The layout was checked manually in desktop Chromium resized to 1280, 390 and
+  320 px wide (no page overflow; the results table scrolls sideways to its last column with the mouse wheel
+  and with the keyboard). That checks the layout, but it does not prove touch swiping works on a real
+  phone, and Safari and Firefox were not tried.
+- The page's JavaScript in automated tests. xUnit only checks that the page is served; the browser checks
+  above were manual.
 - Concurrent load.
 
 ## Known limits

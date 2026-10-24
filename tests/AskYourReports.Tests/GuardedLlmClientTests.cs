@@ -7,7 +7,7 @@ namespace AskYourReports.Tests;
 /// <summary>The real client's cost and reliability controls, exercised with the fake client simulating failures.</summary>
 public class GuardedLlmClientTests(SeededDatabaseFixture fixture) : IClassFixture<SeededDatabaseFixture>
 {
-    private const string Question = "Which products sold worst last month?";
+    private const string Question = "Which products earned the least revenue last month?";
 
     private readonly FixedTimeProvider _time = new();
     private readonly ListLogger<GuardedLlmClient> _logger = new();

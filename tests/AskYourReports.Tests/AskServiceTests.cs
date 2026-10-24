@@ -13,7 +13,7 @@ public class AskServiceTests(SeededDatabaseFixture fixture) : IClassFixture<Seed
     public async Task Valid_pick_runs_the_report_and_returns_a_plain_english_answer()
     {
         var response = await CreateService(new FakeLlmClient())
-            .AskAsync("Which products sold worst last month?", CancellationToken.None);
+            .AskAsync("Which products earned the least revenue last month?", CancellationToken.None);
 
         Assert.Equal(AskOutcome.Answered, response.Outcome);
         Assert.Equal("worst_products", response.Report);
@@ -30,7 +30,7 @@ public class AskServiceTests(SeededDatabaseFixture fixture) : IClassFixture<Seed
     public async Task Invalid_json_from_the_model_returns_could_not_map(string modelOutput)
     {
         var response = await CreateService(new FakeLlmClient { ChoiceOverride = modelOutput })
-            .AskAsync("Which products sold worst last month?", CancellationToken.None);
+            .AskAsync("Which products earned the least revenue last month?", CancellationToken.None);
 
         Assert.Equal(AskOutcome.CouldNotMap, response.Outcome);
         Assert.Equal(AskService.CouldNotMapMessage, response.Answer);

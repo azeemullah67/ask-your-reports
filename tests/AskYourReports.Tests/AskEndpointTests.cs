@@ -37,7 +37,7 @@ public class AskEndpointTests(AppFactory factory) : IClassFixture<AppFactory>
     [Fact]
     public async Task Post_ask_answers_a_question_end_to_end()
     {
-        var response = await _client.PostAsJsonAsync("/ask", new { question = "Which products sold worst last month?" });
+        var response = await _client.PostAsJsonAsync("/ask", new { question = "Which products earned the least revenue last month?" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await ReadJson(response);
@@ -73,6 +73,7 @@ public class AskEndpointTests(AppFactory factory) : IClassFixture<AppFactory>
         var html = await _client.GetStringAsync("/");
 
         Assert.Contains("<form id=\"ask-form\">", html);
+        Assert.Contains("Which products earned the least revenue last month?", html);
     }
 
     private static async Task<JsonElement> ReadJson(HttpResponseMessage response) =>

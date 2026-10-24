@@ -25,7 +25,7 @@ public class AnthropicLlmClientTests
         var handler = new CapturingHandler(HttpStatusCode.OK, OkResponse);
         var client = new AnthropicLlmClient("test-key-not-real", new LlmOptions(), new HttpClient(handler));
 
-        var reply = await client.ChooseReportAsync("Which products sold worst last month?", CancellationToken.None);
+        var reply = await client.ChooseReportAsync("Which products earned the least revenue last month?", CancellationToken.None);
 
         Assert.Equal("""{"report":"worst_products","parameters":{"period":"last_month"}}""", reply.Text);
         Assert.Equal(812, reply.InputTokens);
